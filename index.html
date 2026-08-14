@@ -1,0 +1,3542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1.0,user-scalable=no">
+
+<title>PAC-MAN</title>
+
+<style>
+:root{
+    --bg:#05070c;
+    --panel:#0d111a;
+    --panel2:#131925;
+    --line:#252d3d;
+    --text:#f2f5fa;
+    --muted:#7f8ba0;
+    --yellow:#ffe500;
+    --blue:#315cff;
+    --red:#ff3b30;
+}
+
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+    margin:0;
+    width:100%;
+    min-height:100%;
+    background:
+        radial-gradient(circle at 50% -10%,#17213a 0%,#080b12 45%,#030408 100%);
+    color:var(--text);
+    font-family:
+        Inter,
+        "Segoe UI",
+        "Microsoft YaHei",
+        Arial,
+        sans-serif;
+}
+
+body{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+}
+
+.app{
+    width:min(1180px,96vw);
+    padding:28px 0 40px;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:18px;
+}
+
+.brand h1{
+    margin:0;
+    font-size:32px;
+    letter-spacing:2px;
+    font-weight:900;
+}
+
+.brand p{
+    margin:5px 0 0;
+    color:var(--muted);
+    font-size:13px;
+    letter-spacing:.5px;
+}
+
+.header-right{
+    display:flex;
+    gap:8px;
+}
+
+.header-chip{
+    border:1px solid var(--line);
+    background:rgba(13,17,26,.8);
+    border-radius:8px;
+    padding:7px 11px;
+    color:#9ba6b8;
+    font-size:12px;
+}
+
+.game-layout{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 245px;
+    gap:16px;
+}
+
+.game-card,
+.side-card{
+    background:rgba(10,14,22,.94);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:
+        0 25px 70px rgba(0,0,0,.4),
+        inset 0 1px rgba(255,255,255,.025);
+}
+
+.game-card{
+    padding:14px;
+}
+
+.canvas-wrap{
+    position:relative;
+    width:100%;
+    background:#000;
+    border-radius:11px;
+    overflow:hidden;
+    border:1px solid #1c2432;
+}
+
+canvas{
+    display:block;
+    width:100%;
+    height:auto;
+    image-rendering:auto;
+}
+
+.side{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.side-card{
+    padding:16px;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+}
+
+.stat{
+    padding:11px 12px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    border-radius:10px;
+}
+
+.stat-label{
+    color:var(--muted);
+    font-size:10px;
+    letter-spacing:1px;
+}
+
+.stat-value{
+    margin-top:3px;
+    font-size:20px;
+    font-weight:800;
+}
+
+.lives{
+    color:#ff3347;
+    letter-spacing:2px;
+}
+
+.controls-title{
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:1px;
+    color:#aeb8c9;
+    margin-bottom:10px;
+}
+
+.control-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:7px 0;
+    color:#8994a8;
+    font-size:12px;
+}
+
+.key{
+    min-width:28px;
+    height:25px;
+    padding:0 7px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid #343e50;
+    background:#151b27;
+    border-radius:5px;
+    color:#dce2eb;
+    font-size:11px;
+    font-weight:700;
+}
+
+.action-buttons{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+}
+
+button{
+    border:0;
+    outline:0;
+    cursor:pointer;
+    font:inherit;
+}
+
+.btn{
+    height:40px;
+    border-radius:9px;
+    border:1px solid #30394a;
+    background:#151b27;
+    color:#dce2ea;
+    font-weight:700;
+    font-size:12px;
+    transition:.15s;
+}
+
+.btn:hover{
+    background:#1c2432;
+}
+
+.btn-primary{
+    background:var(--yellow);
+    border-color:var(--yellow);
+    color:#090b0e;
+}
+
+.btn-primary:hover{
+    background:#fff05a;
+}
+
+.btn-danger{
+    color:#ff6b6b;
+}
+
+.help{
+    color:#68758b;
+    font-size:11px;
+    line-height:1.7;
+}
+
+.audio-status{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:11px;
+    color:#7d899b;
+}
+
+.audio-dot{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:#555;
+}
+
+.audio-dot.on{
+    background:#55df9c;
+    box-shadow:0 0 8px #55df9c;
+}
+
+/* =========================================================
+   OVERLAY
+   ========================================================= */
+
+.overlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:rgba(0,0,0,.72);
+    backdrop-filter:blur(5px);
+    z-index:10;
+}
+
+.overlay.hidden{
+    display:none;
+}
+
+.menu{
+    width:min(390px,82%);
+    text-align:center;
+}
+
+.menu-logo{
+    font-size:44px;
+    font-weight:1000;
+    letter-spacing:5px;
+    color:var(--yellow);
+    text-shadow:
+        0 0 18px rgba(255,229,0,.25);
+}
+
+.menu-sub{
+    color:#7e899d;
+    font-size:12px;
+    margin:6px 0 24px;
+    letter-spacing:1px;
+}
+
+.menu-score{
+    color:#b7c0cf;
+    font-size:13px;
+    margin-bottom:18px;
+}
+
+.menu-score strong{
+    color:#fff;
+}
+
+.menu-buttons{
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+}
+
+.big-btn{
+    height:46px;
+    border-radius:9px;
+    font-weight:800;
+    font-size:13px;
+}
+
+.overlay-note{
+    color:#626e82;
+    font-size:10px;
+    margin-top:15px;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+.mobile-controls{
+    display:none;
+    margin-top:12px;
+    justify-content:center;
+}
+
+.dpad{
+    width:165px;
+    height:150px;
+    position:relative;
+}
+
+.dpad button{
+    position:absolute;
+    width:50px;
+    height:50px;
+    border-radius:12px;
+    background:#151b27;
+    border:1px solid #30394a;
+    color:#e9edf3;
+    font-size:21px;
+}
+
+.dpad button:active{
+    background:#273146;
+}
+
+.dpad .up{
+    left:57px;
+    top:0;
+}
+
+.dpad .left{
+    left:0;
+    top:53px;
+}
+
+.dpad .right{
+    right:0;
+    top:53px;
+}
+
+.dpad .down{
+    left:57px;
+    bottom:0;
+}
+
+@media(max-width:800px){
+
+    .app{
+        width:96vw;
+        padding-top:14px;
+    }
+
+    .header{
+        align-items:center;
+    }
+
+    .header-right{
+        display:none;
+    }
+
+    .brand h1{
+        font-size:24px;
+    }
+
+    .game-layout{
+        display:block;
+    }
+
+    .side{
+        margin-top:12px;
+    }
+
+    .side-card:nth-child(n+3){
+        display:none;
+    }
+
+    .mobile-controls{
+        display:flex;
+    }
+}
+
+@media(max-width:520px){
+
+    .game-card{
+        padding:7px;
+        border-radius:11px;
+    }
+
+    .side{
+        gap:7px;
+    }
+
+    .stats{
+        gap:5px;
+    }
+
+    .stat{
+        padding:8px 10px;
+    }
+
+    .stat-value{
+        font-size:17px;
+    }
+
+    .overlay{
+        backdrop-filter:blur(3px);
+    }
+
+    .menu-logo{
+        font-size:32px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <header class="header">
+
+        <div class="brand">
+            <h1>PAC-MAN</h1>
+            <p>MATLAB CLASSIC REPRODUCTION · WEB EDITION</p>
+        </div>
+
+        <div class="header-right">
+            <div class="header-chip">31 × 28 MAZE</div>
+            <div class="header-chip">4 GHOSTS</div>
+            <div class="header-chip">BFS AI</div>
+        </div>
+
+    </header>
+
+
+    <div class="game-layout">
+
+        <!-- =================================================
+             GAME
+             ================================================= -->
+
+        <main class="game-card">
+
+            <div class="canvas-wrap">
+
+                <canvas id="gameCanvas"></canvas>
+
+                <div class="overlay" id="overlay">
+
+                    <div class="menu">
+
+                        <div class="menu-logo">PAC-MAN</div>
+
+                        <div class="menu-sub">
+                            CLASSIC MAZE · WEB EDITION
+                        </div>
+
+                        <div class="menu-score" id="menuScore"></div>
+
+                        <div class="menu-buttons">
+
+                            <button
+                                class="big-btn btn btn-primary"
+                                id="startBtn">
+                                START GAME
+                            </button>
+
+                            <button
+                                class="big-btn btn"
+                                id="restartBtn">
+                                NEW GAME
+                            </button>
+
+                        </div>
+
+                        <div class="overlay-note">
+                            ARROW KEYS / WASD · P PAUSE · SPACE RESTART
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- MOBILE D-PAD -->
+
+            <div class="mobile-controls">
+
+                <div class="dpad">
+
+                    <button class="up" data-dir="up">▲</button>
+
+                    <button class="left" data-dir="left">◀</button>
+
+                    <button class="right" data-dir="right">▶</button>
+
+                    <button class="down" data-dir="down">▼</button>
+
+                </div>
+
+            </div>
+
+        </main>
+
+
+        <!-- =================================================
+             SIDE PANEL
+             ================================================= -->
+
+        <aside class="side">
+
+            <section class="side-card">
+
+                <div class="stats">
+
+                    <div class="stat">
+                        <div class="stat-label">SCORE</div>
+                        <div class="stat-value" id="scoreValue">
+                            000000
+                        </div>
+                    </div>
+
+                    <div class="stat">
+                        <div class="stat-label">LEVEL</div>
+                        <div class="stat-value" id="levelValue">
+                            1
+                        </div>
+                    </div>
+
+                </div>
+
+                <div style="height:8px"></div>
+
+                <div class="stat">
+                    <div class="stat-label">LIVES</div>
+                    <div
+                        class="stat-value lives"
+                        id="livesValue">
+                        ♥ ♥ ♥
+                    </div>
+                </div>
+
+            </section>
+
+
+            <section class="side-card">
+
+                <div class="controls-title">
+                    CONTROLS
+                </div>
+
+                <div class="control-row">
+                    <span>Move</span>
+                    <span>
+                        <span class="key">W</span>
+                        <span class="key">A</span>
+                        <span class="key">S</span>
+                        <span class="key">D</span>
+                    </span>
+                </div>
+
+                <div class="control-row">
+                    <span>Move</span>
+                    <span>
+                        <span class="key">←</span>
+                        <span class="key">↑</span>
+                        <span class="key">↓</span>
+                        <span class="key">→</span>
+                    </span>
+                </div>
+
+                <div class="control-row">
+                    <span>Pause</span>
+                    <span class="key">P</span>
+                </div>
+
+                <div class="control-row">
+                    <span>Restart</span>
+                    <span class="key">SPACE</span>
+                </div>
+
+            </section>
+
+
+            <section class="side-card">
+
+                <div class="controls-title">
+                    AUDIO
+                </div>
+
+                <div class="audio-status">
+                    <span
+                        class="audio-dot"
+                        id="audioDot">
+                    </span>
+
+                    <span id="audioStatus">
+                        Audio ready
+                    </span>
+                </div>
+
+                <div style="height:10px"></div>
+
+                <button
+                    class="btn"
+                    id="soundBtn"
+                    style="width:100%">
+                    SOUND ON
+                </button>
+
+            </section>
+
+
+            <section class="side-card">
+
+                <div class="controls-title">
+                    GAME RULES
+                </div>
+
+                <div class="help">
+                    吃掉普通豆子获得分数。<br>
+                    吃下能量豆后，鬼进入
+                    <b>FRIGHTENED</b> 状态。<br>
+                    连续吃鬼获得
+                    <b>200 / 400 / 800 / 1600</b> 分。<br>
+                    所有豆子吃完后进入下一关。
+                </div>
+
+            </section>
+
+        </aside>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     AUDIO
+     ========================================================= -->
+
+<audio
+    id="bgm"
+    src="pacman_bgm.mp3"
+    loop
+    preload="auto">
+</audio>
+
+
+<script>
+
+/* ============================================================
+   PAC-MAN WEB EDITION
+   ------------------------------------------------------------
+   核心逻辑由 MATLAB 版本迁移：
+
+   - 31 × 28 maze
+   - Player movement
+   - Four ghost target systems
+   - Scatter / Chase
+   - Frightened
+   - Ghost release
+   - BFS ghost return
+   - Tunnel
+   - Power pellets
+   - Multiple ghost scoring
+   - Level / life / speed system
+   ============================================================ */
+
+
+"use strict";
+
+
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
+
+const ROWS = 31;
+const COLS = 28;
+
+const START_LIVES = 3;
+
+const PLAYER_STEP_TIME = 135;
+const GHOST_STEP_TIME = 155;
+
+const SPEED_INCREASE = 4;
+
+const TILE = 24;
+
+
+/* ============================================================
+   MAZE
+   ============================================================ */
+
+const mazeText = [
+"############################",
+"#............##............#",
+"#.####.#####.##.#####.####.#",
+"#o####.#####.##.#####.####o#",
+"#.####.#####.##.#####.####.#",
+"#..........................#",
+"#.####.##.########.##.####.#",
+"#.####.##.########.##.####.#",
+"#......##....##....##......#",
+"######.##### ## #####.######",
+"######.##### ## #####.######",
+"######.##          ##.######",
+"######.## ###  ### ##.######",
+"######.## #      # ##.######",
+"      .   #      #   .      ",
+"######.## #      # ##.######",
+"######.## ######## ##.######",
+"######.##          ##.######",
+"######.## ######## ##.######",
+"######.## ######## ##.######",
+"#............##............#",
+"#.####.#####.##.#####.####.#",
+"#.####.#####.##.#####.####.#",
+"#o..##.......  .......##..o#",
+"###.##.##.########.##.##.###",
+"###.##.##.########.##.##.###",
+"#......##....##....##......#",
+"#.##########.##.##########.#",
+"#.##########.##.##########.#",
+"#..........................#",
+"############################"
+];
+
+
+const maze = mazeText.map(row => row.split(""));
+
+
+/* ============================================================
+   CANVAS
+   ============================================================ */
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = COLS * TILE;
+canvas.height = (ROWS + 3) * TILE;
+
+
+/* ============================================================
+   DOM
+   ============================================================ */
+
+const overlay = document.getElementById("overlay");
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
+
+const scoreValue = document.getElementById("scoreValue");
+const levelValue = document.getElementById("levelValue");
+const livesValue = document.getElementById("livesValue");
+
+const menuScore = document.getElementById("menuScore");
+
+const soundBtn = document.getElementById("soundBtn");
+const audioDot = document.getElementById("audioDot");
+const audioStatus = document.getElementById("audioStatus");
+
+const bgm = document.getElementById("bgm");
+
+
+/* ============================================================
+   AUDIO ENGINE
+   ============================================================ */
+
+let audioContext = null;
+let soundEnabled = true;
+
+
+function initAudio(){
+
+    if(!audioContext){
+
+        audioContext =
+            new (window.AudioContext ||
+                 window.webkitAudioContext)();
+
+    }
+
+    if(audioContext.state === "suspended"){
+        audioContext.resume();
+    }
+
+}
+
+
+function tone(
+    frequency,
+    duration,
+    type="square",
+    volume=0.04,
+    delay=0
+){
+
+    if(!soundEnabled) return;
+
+    initAudio();
+
+    const now = audioContext.currentTime + delay;
+
+    const oscillator =
+        audioContext.createOscillator();
+
+    const gain =
+        audioContext.createGain();
+
+    oscillator.type = type;
+
+    oscillator.frequency.setValueAtTime(
+        frequency,
+        now
+    );
+
+    gain.gain.setValueAtTime(
+        volume,
+        now
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        now + duration
+    );
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start(now);
+    oscillator.stop(now + duration);
+}
+
+
+/* ------------------------------------------------------------
+   游戏音效
+   ------------------------------------------------------------ */
+
+function soundStart(){
+
+    tone(330,.07,"square",.045);
+    tone(440,.07,"square",.045,.07);
+    tone(660,.12,"square",.05,.14);
+
+}
+
+
+function soundPellet(){
+
+    tone(
+        620,
+        .045,
+        "square",
+        .025
+    );
+
+}
+
+
+function soundPower(){
+
+    tone(260,.08,"square",.04);
+    tone(390,.08,"square",.04,.09);
+    tone(520,.13,"square",.04,.18);
+
+}
+
+
+function soundGhost(){
+
+    tone(760,.06,"square",.04);
+    tone(980,.07,"square",.035,.06);
+
+}
+
+
+function soundDeath(){
+
+    const notes = [
+        520,
+        470,
+        420,
+        360,
+        300,
+        240
+    ];
+
+    notes.forEach((f,i)=>{
+        tone(
+            f,
+            .13,
+            "sawtooth",
+            .045,
+            i*.09
+        );
+    });
+
+}
+
+
+function soundLevel(){
+
+    tone(523,.1,"square",.04);
+    tone(659,.1,"square",.04,.1);
+    tone(784,.1,"square",.04,.2);
+    tone(1046,.18,"square",.05,.3);
+
+}
+
+
+function soundPause(){
+
+    tone(440,.08,"square",.03);
+
+}
+
+
+/* ============================================================
+   BGM
+   ============================================================ */
+
+function startBGM(){
+
+    if(!soundEnabled) return;
+
+    bgm.volume = .32;
+
+    const p = bgm.play();
+
+    if(p !== undefined){
+
+        p.then(()=>{
+            audioDot.classList.add("on");
+            audioStatus.textContent = "Music playing";
+        }).catch(()=>{
+            audioStatus.textContent =
+                "Click START to enable audio";
+        });
+
+    }
+
+}
+
+
+function stopBGM(){
+
+    bgm.pause();
+
+}
+
+
+function toggleSound(){
+
+    soundEnabled = !soundEnabled;
+
+    if(soundEnabled){
+
+        soundBtn.textContent = "SOUND ON";
+
+        if(state === "playing"){
+            startBGM();
+        }
+
+        audioStatus.textContent = "Sound enabled";
+        audioDot.classList.add("on");
+
+    }else{
+
+        soundBtn.textContent = "SOUND OFF";
+
+        stopBGM();
+
+        audioStatus.textContent = "Sound disabled";
+        audioDot.classList.remove("on");
+
+    }
+
+}
+
+
+/* ============================================================
+   GAME STATE
+   ============================================================ */
+
+let score = 0;
+let lives = START_LIVES;
+let level = 1;
+
+let extraLifeGiven = false;
+
+let state = "menu";
+
+let readyStart = 0;
+let deathStart = 0;
+let levelClearStart = 0;
+
+let lastFrame = 0;
+
+let playerMoveClock = 0;
+let ghostMoveClock = 0;
+
+let mouthPhase = 0;
+
+
+/* ============================================================
+   PLAYER
+   ============================================================ */
+
+let playerPos = [24,15];
+
+let playerDir = [0,-1];
+
+let wantedDir = [0,-1];
+
+
+/* ============================================================
+   GHOSTS
+   ============================================================ */
+
+const ghostColors = [
+    "#ff3030",
+    "#ff73b8",
+    "#27dfff",
+    "#ffad35"
+];
+
+const ghostNames = [
+    "Blinky",
+    "Pinky",
+    "Inky",
+    "Clyde"
+];
+
+
+let ghostPos = [
+    [12,14],
+    [15,12],
+    [15,14],
+    [15,16]
+];
+
+
+let ghostDir = [
+    [0,-1],
+    [-1,0],
+    [-1,0],
+    [1,0]
+];
+
+
+let ghostActive = [
+    true,
+    false,
+    false,
+    false
+];
+
+
+let ghostEaten = [
+    false,
+    false,
+    false,
+    false
+];
+
+
+const ghostHome = [15,14];
+
+
+const ghostReleaseTime = [
+    0,
+    1800,
+    3600,
+    5400
+];
+
+
+let ghostReleaseClock = 0;
+
+
+/* ============================================================
+   MODE
+   ============================================================ */
+
+let mode = "scatter";
+
+let modeIndex = 0;
+
+const modeTimes = [
+    7000,
+    20000,
+    7000,
+    20000,
+    5000,
+    20000,
+    5000,
+    Infinity
+];
+
+let modeClock = 0;
+
+
+/* ============================================================
+   FRIGHTENED
+   ============================================================ */
+
+let frightened = false;
+
+let frightenedStart = 0;
+
+let frightenedDuration = 0;
+
+let ghostEatCount = 0;
+
+
+const frightenedTable = [
+    6,
+    5,
+    4,
+    3,
+    2,
+    5,
+    2,
+    2,
+    1,
+    5,
+    2,
+    1,
+    1,
+    3,
+    1,
+    1
+];
+
+
+/* ============================================================
+   PELLETS
+   ============================================================ */
+
+let pellets = [];
+let powerPellets = [];
+
+
+function resetPellets(){
+
+    pellets = [];
+
+    powerPellets = [];
+
+    for(let r=0;r<ROWS;r++){
+
+        pellets[r] = [];
+        powerPellets[r] = [];
+
+        for(let c=0;c<COLS;c++){
+
+            pellets[r][c] =
+                maze[r][c] === ".";
+
+            powerPellets[r][c] =
+                maze[r][c] === "o";
+
+        }
+
+    }
+
+}
+
+
+/* ============================================================
+   DIRECTIONS
+   ============================================================ */
+
+const dirs = [
+    [-1,0],
+    [0,-1],
+    [1,0],
+    [0,1]
+];
+
+
+function equalDir(a,b){
+
+    return a[0] === b[0] &&
+           a[1] === b[1];
+
+}
+
+
+function oppositeDir(d){
+
+    return [-d[0],-d[1]];
+
+}
+
+
+/* ============================================================
+   WRAP
+   ============================================================ */
+
+function wrapPosition(pos){
+
+    let r = pos[0];
+    let c = pos[1];
+
+    if(r === 15){
+
+        if(c < 1){
+            c = COLS;
+        }
+
+        if(c > COLS){
+            c = 1;
+        }
+
+    }
+
+    return [r,c];
+
+}
+
+
+/* ============================================================
+   PLAYER MOVEMENT
+   ============================================================ */
+
+function canPlayerMove(pos,dir){
+
+    if(equalDir(dir,[0,0])){
+        return false;
+    }
+
+    const next =
+        wrapPosition([
+            pos[0] + dir[0],
+            pos[1] + dir[1]
+        ]);
+
+    const r = next[0];
+    const c = next[1];
+
+    if(
+        r < 1 ||
+        r > ROWS ||
+        c < 1 ||
+        c > COLS
+    ){
+        return false;
+    }
+
+    if(maze[r-1][c-1] === "#"){
+        return false;
+    }
+
+    /* 玩家不能进入鬼屋 */
+
+    if(
+        r >= 13 &&
+        r <= 17 &&
+        c >= 11 &&
+        c <= 18
+    ){
+        return false;
+    }
+
+    return true;
+
+}
+
+
+/* ============================================================
+   GHOST MOVEMENT
+   ============================================================ */
+
+function canGhostMove(pos,dir){
+
+    if(equalDir(dir,[0,0])){
+        return false;
+    }
+
+    const next =
+        wrapPosition([
+            pos[0] + dir[0],
+            pos[1] + dir[1]
+        ]);
+
+    const r = next[0];
+    const c = next[1];
+
+    if(
+        r < 1 ||
+        r > ROWS ||
+        c < 1 ||
+        c > COLS
+    ){
+        return false;
+    }
+
+    return maze[r-1][c-1] !== "#";
+
+}
+
+
+/* ============================================================
+   UPDATE PLAYER
+   ============================================================ */
+
+function updatePlayer(){
+
+    if(canPlayerMove(playerPos,wantedDir)){
+
+        playerDir = [...wantedDir];
+
+    }
+
+
+    if(!canPlayerMove(playerPos,playerDir)){
+        return;
+    }
+
+
+    playerPos =
+        wrapPosition([
+            playerPos[0] + playerDir[0],
+            playerPos[1] + playerDir[1]
+        ]);
+
+
+    const r = playerPos[0]-1;
+    const c = playerPos[1]-1;
+
+
+    if(pellets[r][c]){
+
+        pellets[r][c] = false;
+
+        score += 10;
+
+        soundPellet();
+
+    }
+
+
+    if(powerPellets[r][c]){
+
+        powerPellets[r][c] = false;
+
+        score += 50;
+
+        activateFrightened();
+
+        soundPower();
+
+    }
+
+
+    if(score >= 10000 && !extraLifeGiven){
+
+        lives++;
+
+        extraLifeGiven = true;
+
+    }
+
+}
+
+
+/* ============================================================
+   GHOST RELEASE
+   ============================================================ */
+
+function updateGhostRelease(now){
+
+    const elapsed =
+        now - ghostReleaseClock;
+
+    for(let g=1;g<4;g++){
+
+        if(
+            !ghostActive[g] &&
+            elapsed >= ghostReleaseTime[g]
+        ){
+
+            ghostActive[g] = true;
+
+            ghostDir[g] = [-1,0];
+
+        }
+
+    }
+
+}
+
+
+/* ============================================================
+   GHOST TARGET
+   ============================================================ */
+
+function ghostTarget(g){
+
+    const p = [...playerPos];
+    const d = [...playerDir];
+
+    let target;
+
+
+    switch(g){
+
+        case 0:
+
+            target = p;
+
+            break;
+
+
+        case 1:
+
+            target = [
+                p[0] + 4*d[0],
+                p[1] + 4*d[1]
+            ];
+
+            if(equalDir(d,[-1,0])){
+
+                target = [
+                    p[0]-4,
+                    p[1]-4
+                ];
+
+            }
+
+            break;
+
+
+        case 2:{
+
+            let ahead = [
+                p[0] + 2*d[0],
+                p[1] + 2*d[1]
+            ];
+
+            if(equalDir(d,[-1,0])){
+
+                ahead = [
+                    p[0]-2,
+                    p[1]-2
+                ];
+
+            }
+
+            const blinky =
+                ghostPos[0];
+
+            target = [
+                ahead[0] +
+                (ahead[0]-blinky[0]),
+
+                ahead[1] +
+                (ahead[1]-blinky[1])
+            ];
+
+            break;
+        }
+
+
+        case 3:{
+
+            const dr =
+                ghostPos[3][0]-p[0];
+
+            const dc =
+                ghostPos[3][1]-p[1];
+
+            const dist2 =
+                dr*dr + dc*dc;
+
+            if(dist2 >= 64){
+
+                target = p;
+
+            }else{
+
+                target = [30,2];
+
+            }
+
+            break;
+        }
+
+    }
+
+
+    target[0] =
+        Math.max(
+            1,
+            Math.min(ROWS,target[0])
+        );
+
+    target[1] =
+        Math.max(
+            1,
+            Math.min(COLS,target[1])
+        );
+
+    return target;
+
+}
+
+
+/* ============================================================
+   SCATTER TARGET
+   ============================================================ */
+
+function scatterTarget(g){
+
+    switch(g){
+
+        case 0:
+            return [2,27];
+
+        case 1:
+            return [2,2];
+
+        case 2:
+            return [30,27];
+
+        default:
+            return [30,2];
+
+    }
+
+}
+
+
+/* ============================================================
+   TARGET DIRECTION
+   ============================================================ */
+
+function chooseTargetDirection(g){
+
+    const current =
+        ghostPos[g];
+
+    const valid = [];
+
+
+    for(const d of dirs){
+
+        if(equalDir(d,oppositeDir(ghostDir[g]))){
+            continue;
+        }
+
+        if(canGhostMove(current,d)){
+            valid.push(d);
+        }
+
+    }
+
+
+    if(valid.length === 0){
+
+        const d =
+            oppositeDir(ghostDir[g]);
+
+        if(canGhostMove(current,d)){
+            ghostDir[g] = d;
+        }
+
+        return;
+
+    }
+
+
+    /* 鬼屋区域 */
+
+    if(
+        current[0] >= 12 &&
+        current[0] <= 17 &&
+        current[1] >= 11 &&
+        current[1] <= 18
+    ){
+
+        const target = [14,14];
+
+        let best = Infinity;
+        let bestDir = valid[0];
+
+
+        for(const d of valid){
+
+            const next =
+                wrapPosition([
+                    current[0]+d[0],
+                    current[1]+d[1]
+                ]);
+
+            const dist =
+                Math.abs(next[0]-target[0]) +
+                Math.abs(next[1]-target[1]);
+
+            if(dist < best){
+
+                best = dist;
+                bestDir = d;
+
+            }
+
+        }
+
+        ghostDir[g] = [...bestDir];
+
+        return;
+
+    }
+
+
+    const target =
+        mode === "scatter"
+        ? scatterTarget(g)
+        : ghostTarget(g);
+
+
+    let bestDist = Infinity;
+    let bestDir = valid[0];
+
+
+    for(const d of valid){
+
+        const next =
+            wrapPosition([
+                current[0]+d[0],
+                current[1]+d[1]
+            ]);
+
+
+        let dx =
+            Math.abs(
+                next[1]-target[1]
+            );
+
+        dx =
+            Math.min(
+                dx,
+                COLS-dx
+            );
+
+
+        const dy =
+            Math.abs(
+                next[0]-target[0]
+            );
+
+
+        const dist =
+            dx*dx + dy*dy;
+
+
+        if(dist < bestDist){
+
+            bestDist = dist;
+            bestDir = d;
+
+        }
+
+    }
+
+
+    ghostDir[g] = [...bestDir];
+
+}
+
+
+/* ============================================================
+   FRIGHTENED DIRECTION
+   ============================================================ */
+
+function chooseFrightenedDirection(g){
+
+    const current =
+        ghostPos[g];
+
+    const valid = [];
+
+
+    for(const d of dirs){
+
+        if(
+            equalDir(
+                d,
+                oppositeDir(ghostDir[g])
+            )
+        ){
+            continue;
+        }
+
+        if(canGhostMove(current,d)){
+            valid.push(d);
+        }
+
+    }
+
+
+    if(valid.length === 0){
+
+        const d =
+            oppositeDir(ghostDir[g]);
+
+        if(canGhostMove(current,d)){
+            ghostDir[g] = d;
+        }
+
+        return;
+
+    }
+
+
+    const d =
+        valid[
+            Math.floor(
+                Math.random()*valid.length
+            )
+        ];
+
+    ghostDir[g] = [...d];
+
+}
+
+
+/* ============================================================
+   FRIGHTENED
+   ============================================================ */
+
+function getFrightenedDuration(){
+
+    if(
+        level <=
+        frightenedTable.length
+    ){
+
+        return frightenedTable[level-1];
+
+    }
+
+    return 0;
+
+}
+
+
+function activateFrightened(){
+
+    const duration =
+        getFrightenedDuration();
+
+    if(duration <= 0){
+        return;
+    }
+
+    frightened = true;
+
+    frightenedStart =
+        performance.now();
+
+    frightenedDuration =
+        duration*1000;
+
+    ghostEatCount = 0;
+
+
+    for(let g=0;g<4;g++){
+
+        if(
+            ghostActive[g] &&
+            !ghostEaten[g]
+        ){
+
+            ghostDir[g] =
+                oppositeDir(ghostDir[g]);
+
+        }
+
+    }
+
+}
+
+
+/* ============================================================
+   UPDATE FRIGHTENED
+   ============================================================ */
+
+function updateFrightened(now){
+
+    if(!frightened){
+        return;
+    }
+
+    const remaining =
+        frightenedDuration -
+        (now-frightenedStart);
+
+
+    if(remaining <= 0){
+
+        frightened = false;
+
+        frightenedDuration = 0;
+
+        for(let g=0;g<4;g++){
+
+            if(
+                ghostActive[g] &&
+                !ghostEaten[g]
+            ){
+
+                ghostDir[g] =
+                    oppositeDir(ghostDir[g]);
+
+            }
+
+        }
+
+    }
+
+}
+
+
+/* ============================================================
+   UPDATE MODE
+   ============================================================ */
+
+function updateMode(now){
+
+    if(frightened){
+        return;
+    }
+
+    if(modeIndex >= modeTimes.length){
+        return;
+    }
+
+    if(
+        now-modeClock >=
+        modeTimes[modeIndex]
+    ){
+
+        modeIndex++;
+
+        if(
+            modeIndex >= modeTimes.length
+        ){
+            modeIndex =
+                modeTimes.length-1;
+        }
+
+
+        if(
+            modeIndex % 2 === 0
+        ){
+
+            mode = "scatter";
+
+        }else{
+
+            mode = "chase";
+
+        }
+
+
+        for(let g=0;g<4;g++){
+
+            if(
+                ghostActive[g] &&
+                !ghostEaten[g]
+            ){
+
+                ghostDir[g] =
+                    oppositeDir(
+                        ghostDir[g]
+                    );
+
+            }
+
+        }
+
+
+        modeClock = now;
+
+    }
+
+}
+
+
+/* ============================================================
+   BFS
+   ============================================================ */
+
+function findNextStepBFS(startPos,targetPos){
+
+    if(
+        startPos[0] === targetPos[0] &&
+        startPos[1] === targetPos[1]
+    ){
+
+        return [...startPos];
+
+    }
+
+
+    const visited =
+        Array.from(
+            {length:ROWS},
+            ()=>Array(COLS).fill(false)
+        );
+
+
+    const parent =
+        Array.from(
+            {length:ROWS},
+            ()=>Array(COLS).fill(null)
+        );
+
+
+    const queue = [];
+
+    queue.push([...startPos]);
+
+    visited[
+        startPos[0]-1
+    ][
+        startPos[1]-1
+    ] = true;
+
+
+    let head = 0;
+
+    let found = false;
+
+
+    while(head < queue.length){
+
+        const current =
+            queue[head++];
+
+
+        if(
+            current[0] === targetPos[0] &&
+            current[1] === targetPos[1]
+        ){
+
+            found = true;
+            break;
+
+        }
+
+
+        for(const d of dirs){
+
+            let nr =
+                current[0]+d[0];
+
+            let nc =
+                current[1]+d[1];
+
+
+            if(nr === 15){
+
+                if(nc < 1){
+                    nc = COLS;
+                }
+
+                if(nc > COLS){
+                    nc = 1;
+                }
+
+            }
+
+
+            if(
+                nr < 1 ||
+                nr > ROWS ||
+                nc < 1 ||
+                nc > COLS
+            ){
+                continue;
+            }
+
+
+            if(
+                maze[nr-1][nc-1] === "#"
+            ){
+                continue;
+            }
+
+
+            if(
+                visited[nr-1][nc-1]
+            ){
+                continue;
+            }
+
+
+            visited[nr-1][nc-1] = true;
+
+            parent[nr-1][nc-1] =
+                [...current];
+
+            queue.push([nr,nc]);
+
+        }
+
+    }
+
+
+    if(!found){
+        return null;
+    }
+
+
+    let current =
+        [...targetPos];
+
+    const path = [current];
+
+
+    while(
+        current[0] !== startPos[0] ||
+        current[1] !== startPos[1]
+    ){
+
+        const p =
+            parent[
+                current[0]-1
+            ][
+                current[1]-1
+            ];
+
+
+        if(!p){
+            return null;
+        }
+
+
+        current = [...p];
+
+        path.unshift(current);
+
+    }
+
+
+    if(path.length >= 2){
+        return [...path[1]];
+    }
+
+
+    return [...startPos];
+
+}
+
+
+/* ============================================================
+   MOVE EATEN GHOST
+   ============================================================ */
+
+function moveGhostHome(g){
+
+    const current =
+        ghostPos[g];
+
+    const target =
+        ghostHome;
+
+
+    if(
+        current[0] === target[0] &&
+        current[1] === target[1]
+    ){
+
+        ghostEaten[g] = false;
+
+        ghostActive[g] = true;
+
+        ghostDir[g] = [-1,0];
+
+        return;
+
+    }
+
+
+    const next =
+        findNextStepBFS(
+            current,
+            target
+        );
+
+
+    if(next){
+
+        ghostDir[g] = [
+            next[0]-current[0],
+            next[1]-current[1]
+        ];
+
+        ghostPos[g] =
+            wrapPosition(next);
+
+    }else{
+
+        const d =
+            oppositeDir(ghostDir[g]);
+
+        if(canGhostMove(current,d)){
+
+            ghostDir[g] = d;
+
+            ghostPos[g] =
+                wrapPosition([
+                    current[0]+d[0],
+                    current[1]+d[1]
+                ]);
+
+        }
+
+    }
+
+}
+
+
+/* ============================================================
+   UPDATE GHOSTS
+   ============================================================ */
+
+function updateGhosts(){
+
+    for(let g=0;g<4;g++){
+
+        if(!ghostActive[g]){
+            continue;
+        }
+
+
+        if(ghostEaten[g]){
+
+            moveGhostHome(g);
+
+            continue;
+
+        }
+
+
+        if(frightened){
+
+            chooseFrightenedDirection(g);
+
+        }else{
+
+            chooseTargetDirection(g);
+
+        }
+
+
+        if(
+            canGhostMove(
+                ghostPos[g],
+                ghostDir[g]
+            )
+        ){
+
+            ghostPos[g] =
+                wrapPosition([
+                    ghostPos[g][0]+ghostDir[g][0],
+                    ghostPos[g][1]+ghostDir[g][1]
+                ]);
+
+        }
+
+    }
+
+}
+
+
+/* ============================================================
+   COLLISION
+   ============================================================ */
+
+function checkGhostCollision(){
+
+    for(let g=0;g<4;g++){
+
+        if(
+            !ghostActive[g] ||
+            ghostEaten[g]
+        ){
+            continue;
+        }
+
+
+        if(
+            playerPos[0] === ghostPos[g][0] &&
+            playerPos[1] === ghostPos[g][1]
+        ){
+
+            if(frightened){
+
+                eatGhost(g);
+
+            }else{
+
+                loseLife();
+
+            }
+
+            return;
+
+        }
+
+    }
+
+}
+
+
+/* ============================================================
+   EAT GHOST
+   ============================================================ */
+
+function eatGhost(g){
+
+    ghostEaten[g] = true;
+
+    ghostEatCount++;
+
+
+    const points =
+        [200,400,800,1600][
+            Math.min(
+                ghostEatCount-1,
+                3
+            )
+        ];
+
+
+    score += points;
+
+    soundGhost();
+
+
+    if(
+        score >= 10000 &&
+        !extraLifeGiven
+    ){
+
+        lives++;
+
+        extraLifeGiven = true;
+
+    }
+
+}
+
+
+/* ============================================================
+   PLAYER DEATH
+   ============================================================ */
+
+function loseLife(){
+
+    lives--;
+
+    state = "dead";
+
+    deathStart =
+        performance.now();
+
+    soundDeath();
+
+    stopBGM();
+
+}
+
+
+/* ============================================================
+   LEVEL CLEAR
+   ============================================================ */
+
+function checkLevelClear(){
+
+    for(let r=0;r<ROWS;r++){
+
+        for(let c=0;c<COLS;c++){
+
+            if(
+                pellets[r][c] ||
+                powerPellets[r][c]
+            ){
+                return;
+            }
+
+        }
+
+    }
+
+
+    state = "levelclear";
+
+    levelClearStart =
+        performance.now();
+
+    soundLevel();
+
+    stopBGM();
+
+}
+
+
+/* ============================================================
+   RESET POSITIONS
+   ============================================================ */
+
+function resetPositions(){
+
+    playerPos = [24,15];
+
+    playerDir = [0,-1];
+
+    wantedDir = [0,-1];
+
+
+    ghostPos = [
+        [12,14],
+        [15,12],
+        [15,14],
+        [15,16]
+    ];
+
+
+    ghostDir = [
+        [0,-1],
+        [-1,0],
+        [-1,0],
+        [1,0]
+    ];
+
+
+    ghostActive = [
+        true,
+        false,
+        false,
+        false
+    ];
+
+
+    ghostEaten = [
+        false,
+        false,
+        false,
+        false
+    ];
+
+
+    ghostReleaseClock =
+        performance.now();
+
+
+    mode = "scatter";
+
+    modeIndex = 0;
+
+    modeClock =
+        performance.now();
+
+
+    frightened = false;
+
+    frightenedDuration = 0;
+
+    ghostEatCount = 0;
+
+}
+
+
+/* ============================================================
+   NEW GAME
+   ============================================================ */
+
+function newGame(){
+
+    score = 0;
+
+    lives = START_LIVES;
+
+    level = 1;
+
+    extraLifeGiven = false;
+
+    resetPellets();
+
+    resetPositions();
+
+    state = "ready";
+
+    readyStart =
+        performance.now();
+
+    overlay.classList.add("hidden");
+
+    soundStart();
+
+    startBGM();
+
+}
+
+
+/* ============================================================
+   START
+   ============================================================ */
+
+function startGame(){
+
+    initAudio();
+
+    newGame();
+
+}
+
+
+/* ============================================================
+   NEXT LEVEL
+   ============================================================ */
+
+function nextLevel(){
+
+    level++;
+
+    resetPellets();
+
+    resetPositions();
+
+    state = "ready";
+
+    readyStart =
+        performance.now();
+
+    frightened = false;
+
+    soundStart();
+
+    startBGM();
+
+}
+
+
+/* ============================================================
+   PAUSE
+   ============================================================ */
+
+function togglePause(){
+
+    if(state === "playing"){
+
+        state = "paused";
+
+        soundPause();
+
+        bgm.pause();
+
+    }else if(state === "paused"){
+
+        state = "playing";
+
+        const now =
+            performance.now();
+
+        playerMoveClock = now;
+
+        ghostMoveClock = now;
+
+        modeClock = now;
+
+        ghostReleaseClock = now;
+
+        if(soundEnabled){
+            startBGM();
+        }
+
+    }
+
+}
+
+
+/* ============================================================
+   INPUT
+   ============================================================ */
+
+function setDirection(dir){
+
+    if(state !== "playing"){
+        return;
+    }
+
+    wantedDir = [...dir];
+
+}
+
+
+document.addEventListener(
+    "keydown",
+    e => {
+
+        const key =
+            e.key.toLowerCase();
+
+
+        if([
+            "arrowup",
+            "arrowdown",
+            "arrowleft",
+            "arrowright",
+            " ",
+        ].includes(key)){
+
+            e.preventDefault();
+
+        }
+
+
+        switch(key){
+
+            case "arrowup":
+            case "w":
+                setDirection([-1,0]);
+                break;
+
+            case "arrowdown":
+            case "s":
+                setDirection([1,0]);
+                break;
+
+            case "arrowleft":
+            case "a":
+                setDirection([0,-1]);
+                break;
+
+            case "arrowright":
+            case "d":
+                setDirection([0,1]);
+                break;
+
+            case "p":
+                togglePause();
+                break;
+
+            case " ":
+
+                if(
+                    state === "menu" ||
+                    state === "gameover"
+                ){
+
+                    startGame();
+
+                }else{
+
+                    restartGame();
+
+                }
+
+                break;
+
+        }
+
+    },
+    {passive:false}
+);
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+document.querySelectorAll(
+    ".dpad button"
+).forEach(btn => {
+
+    btn.addEventListener(
+        "pointerdown",
+        e => {
+
+            e.preventDefault();
+
+            const d =
+                btn.dataset.dir;
+
+            if(d === "up")
+                setDirection([-1,0]);
+
+            if(d === "down")
+                setDirection([1,0]);
+
+            if(d === "left")
+                setDirection([0,-1]);
+
+            if(d === "right")
+                setDirection([0,1]);
+
+        }
+    );
+
+});
+
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+startBtn.addEventListener(
+    "click",
+    startGame
+);
+
+
+restartBtn.addEventListener(
+    "click",
+    startGame
+);
+
+
+soundBtn.addEventListener(
+    "click",
+    toggleSound
+);
+
+
+/* ============================================================
+   RESTART
+   ============================================================ */
+
+function restartGame(){
+
+    newGame();
+
+}
+
+
+/* ============================================================
+   DRAW HELPERS
+   ============================================================ */
+
+function cellCenter(r,c){
+
+    return [
+        (c-.5)*TILE,
+        (r-.5)*TILE
+    ];
+
+}
+
+
+/* ============================================================
+   DRAW MAZE
+   ============================================================ */
+
+function drawMaze(){
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    /* 外围 */
+
+    ctx.strokeStyle =
+        "#244fff";
+
+    ctx.lineWidth = 2;
+
+
+    for(let r=0;r<ROWS;r++){
+
+        for(let c=0;c<COLS;c++){
+
+            if(maze[r][c] !== "#"){
+                continue;
+            }
+
+
+            const x = c*TILE;
+            const y = r*TILE;
+
+
+            /* 深蓝墙体 */
+
+            ctx.fillStyle =
+                "#071346";
+
+            ctx.fillRect(
+                x,
+                y,
+                TILE,
+                TILE
+            );
+
+
+            ctx.strokeStyle =
+                "#245cff";
+
+            ctx.lineWidth = 1.5;
+
+            ctx.strokeRect(
+                x+1,
+                y+1,
+                TILE-2,
+                TILE-2
+            );
+
+        }
+
+    }
+
+
+
+}
+
+
+/* ============================================================
+   DRAW PELLETS
+   ============================================================ */
+
+function drawPellets(){
+
+    for(let r=0;r<ROWS;r++){
+
+        for(let c=0;c<COLS;c++){
+
+            if(pellets[r][c]){
+
+                const [
+                    x,
+                    y
+                ] = cellCenter(
+                    r+1,
+                    c+1
+                );
+
+
+                ctx.fillStyle =
+                    "#f5f5f5";
+
+                ctx.beginPath();
+
+                ctx.arc(
+                    x,
+                    y,
+                    2.1,
+                    0,
+                    Math.PI*2
+                );
+
+                ctx.fill();
+
+            }
+
+
+            if(powerPellets[r][c]){
+
+                const [
+                    x,
+                    y
+                ] = cellCenter(
+                    r+1,
+                    c+1
+                );
+
+
+                const pulse =
+                    5 +
+                    Math.sin(
+                        mouthPhase*.15
+                    )*1.3;
+
+
+                ctx.fillStyle =
+                    "#fff";
+
+                ctx.beginPath();
+
+                ctx.arc(
+                    x,
+                    y,
+                    pulse,
+                    0,
+                    Math.PI*2
+                );
+
+                ctx.fill();
+
+            }
+
+        }
+
+    }
+
+}
+
+
+/* ============================================================
+   PACMAN DRAW
+   ============================================================ */
+
+function drawPacman(){
+
+    const [
+        x,
+        y
+    ] = cellCenter(
+        playerPos[0],
+        playerPos[1]
+    );
+
+
+    let angle = 0;
+
+
+    if(equalDir(playerDir,[1,0]))
+        angle = Math.PI/2;
+
+    if(equalDir(playerDir,[0,-1]))
+        angle = Math.PI;
+
+    if(equalDir(playerDir,[-1,0]))
+        angle = -Math.PI/2;
+
+
+    const mouthOpen =
+        (mouthPhase % 4) < 2;
+
+
+    const mouth =
+        mouthOpen
+        ? Math.PI/5
+        : 0;
+
+
+    ctx.fillStyle =
+        "#ffe500";
+
+
+    ctx.beginPath();
+
+    if(mouth === 0){
+
+        ctx.arc(
+            x,
+            y,
+            TILE*.43,
+            0,
+            Math.PI*2
+        );
+
+    }else{
+
+        ctx.moveTo(x,y);
+
+        ctx.arc(
+            x,
+            y,
+            TILE*.43,
+            angle+mouth,
+            angle+Math.PI*2-mouth
+        );
+
+        ctx.closePath();
+
+    }
+
+    ctx.fill();
+
+}
+
+
+/* ============================================================
+   GHOST DRAW
+   ============================================================ */
+
+function drawGhost(g){
+
+    if(!ghostActive[g]){
+        return;
+    }
+
+
+    const [
+        x,
+        y
+    ] = cellCenter(
+        ghostPos[g][0],
+        ghostPos[g][1]
+    );
+
+
+    const R =
+        TILE*.46;
+
+
+    /* 被吃掉：只画眼睛 */
+
+    if(ghostEaten[g]){
+
+        drawEyes(
+            x,
+            y,
+            ghostDir[g]
+        );
+
+        return;
+
+    }
+
+
+    let color =
+        ghostColors[g];
+
+
+    if(frightened){
+
+        const remaining =
+            frightenedDuration -
+            (
+                performance.now() -
+                frightenedStart
+            );
+
+
+        if(
+            remaining <= 2000 &&
+            Math.floor(
+                (performance.now() -
+                 frightenedStart)/125
+            ) % 2
+        ){
+
+            color = "#fff";
+
+        }else{
+
+            color = "#1945d8";
+
+        }
+
+    }
+
+
+    ctx.fillStyle = color;
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y-R*.05,
+        R,
+        Math.PI,
+        0
+    );
+
+
+    ctx.lineTo(
+        x+R,
+        y+R*.65
+    );
+
+
+    const steps = 6;
+
+
+    for(let i=0;i<steps;i++){
+
+        const px =
+            x+R -
+            (2*R/steps)*(i+1);
+
+        const py =
+            y+
+            (i%2===0
+                ? R*.88
+                : R*.63);
+
+        ctx.lineTo(
+            px,
+            py
+        );
+
+    }
+
+
+    ctx.lineTo(
+        x-R,
+        y+R*.65
+    );
+
+
+    ctx.closePath();
+
+    ctx.fill();
+
+
+    drawEyes(
+        x,
+        y,
+        ghostDir[g]
+    );
+
+}
+
+
+/* ============================================================
+   GHOST EYES
+   ============================================================ */
+
+function drawEyes(x,y,dir){
+
+    const ox =
+        dir[1]*1.8;
+
+    const oy =
+        dir[0]*1.8;
+
+
+    const eyes = [
+        [x-TILE*.15+ox,y-TILE*.1+oy],
+        [x+TILE*.15+ox,y-TILE*.1+oy]
+    ];
+
+
+    for(const e of eyes){
+
+        ctx.fillStyle="#fff";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            e[0],
+            e[1],
+            TILE*.11,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fill();
+
+
+        ctx.fillStyle="#102aa8";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            e[0]+dir[1]*2.5,
+            e[1]+dir[0]*2.5,
+            TILE*.055,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fill();
+
+    }
+
+}
+
+
+/* ============================================================
+   HUD
+   ============================================================ */
+
+function drawHUD(){
+
+    const y =
+        ROWS*TILE +
+        TILE*.85;
+
+
+    ctx.font =
+        "bold 13px Arial";
+
+    ctx.fillStyle =
+        "#fff";
+
+    ctx.textAlign = "left";
+
+    ctx.fillText(
+        `SCORE ${String(score).padStart(6,"0")}`,
+        12,
+        y
+    );
+
+
+    ctx.textAlign = "center";
+
+    ctx.fillText(
+        `LEVEL ${level}`,
+        canvas.width/2,
+        y
+    );
+
+
+    ctx.textAlign = "right";
+
+    ctx.fillStyle =
+        "#ff3347";
+
+    ctx.fillText(
+        "♥ ".repeat(Math.max(0,lives)).trim(),
+        canvas.width-12,
+        y
+    );
+
+}
+
+
+/* ============================================================
+   CENTER MESSAGE
+   ============================================================ */
+
+function drawMessage(){
+
+    if(state === "playing"){
+        return;
+    }
+
+
+    let text = "";
+
+    if(state === "ready"){
+
+        text =
+            level === 1 &&
+            score === 0
+            ? "READY!"
+            : `LEVEL ${level}`;
+
+    }
+
+    if(state === "paused"){
+        text = "PAUSED";
+    }
+
+    if(state === "dead"){
+        text = "OUCH!";
+    }
+
+    if(state === "levelclear"){
+        text = `LEVEL ${level} CLEAR!`;
+    }
+
+    if(state === "gameover"){
+        text = "GAME OVER";
+    }
+
+
+    if(!text){
+        return;
+    }
+
+
+    ctx.font =
+        "bold 20px Arial";
+
+    ctx.textAlign = "center";
+
+    ctx.fillStyle =
+        state === "paused"
+        ? "#fff"
+        : "#ffe500";
+
+
+    ctx.shadowColor =
+        "rgba(255,229,0,.35)";
+
+    ctx.shadowBlur = 12;
+
+
+    ctx.fillText(
+        text,
+        canvas.width/2,
+        20*TILE
+    );
+
+
+    ctx.shadowBlur = 0;
+
+}
+
+
+/* ============================================================
+   FRIGHTENED TEXT
+   ============================================================ */
+
+function drawFrightenedText(){
+
+    if(!frightened){
+        return;
+    }
+
+
+    const remaining =
+        Math.max(
+            0,
+            frightenedDuration -
+            (
+                performance.now() -
+                frightenedStart
+            )
+        );
+
+
+    ctx.font =
+        "bold 11px Arial";
+
+    ctx.textAlign = "center";
+
+    ctx.fillStyle =
+        remaining <= 2000
+        ? (
+            Math.floor(
+                remaining/125
+            )%2
+            ? "#fff"
+            : "#4d7dff"
+        )
+        : "#4d7dff";
+
+
+    ctx.fillText(
+        `FRIGHTENED ${(remaining/1000).toFixed(1)}`,
+        canvas.width/2,
+        19*TILE
+    );
+
+}
+
+
+/* ============================================================
+   UI UPDATE
+   ============================================================ */
+
+function updateUI(){
+
+    scoreValue.textContent =
+        String(score).padStart(6,"0");
+
+    levelValue.textContent =
+        level;
+
+    livesValue.textContent =
+        lives > 0
+        ? "♥ ".repeat(lives).trim()
+        : "—";
+
+}
+
+
+/* ============================================================
+   DRAW
+   ============================================================ */
+
+function draw(){
+
+    drawMaze();
+
+    drawPellets();
+
+    drawPacman();
+
+
+    for(let g=0;g<4;g++){
+        drawGhost(g);
+    }
+
+
+    drawHUD();
+
+    drawFrightenedText();
+
+    drawMessage();
+
+    updateUI();
+
+}
+
+
+/* ============================================================
+   GAME LOOP
+   ============================================================ */
+
+function gameLoop(now){
+
+    if(!lastFrame){
+        lastFrame = now;
+    }
+
+
+    const dt =
+        now-lastFrame;
+
+    lastFrame = now;
+
+
+    if(state === "ready"){
+
+        if(
+            now-readyStart >= 1200
+        ){
+
+            state = "playing";
+
+            playerMoveClock = now;
+            ghostMoveClock = now;
+
+            modeClock = now;
+            ghostReleaseClock = now;
+
+        }
+
+    }
+
+
+    else if(state === "playing"){
+
+        updateFrightened(now);
+
+        updateMode(now);
+
+        updateGhostRelease(now);
+
+
+        const playerInterval =
+            Math.max(
+                85,
+                PLAYER_STEP_TIME -
+                SPEED_INCREASE*(level-1)
+            );
+
+
+        if(
+            now-playerMoveClock >=
+            playerInterval
+        ){
+
+            updatePlayer();
+
+            playerMoveClock = now;
+
+        }
+
+
+        const ghostInterval =
+            Math.max(
+                95,
+                GHOST_STEP_TIME -
+                SPEED_INCREASE*(level-1)
+            );
+
+
+        if(
+            now-ghostMoveClock >=
+            ghostInterval
+        ){
+
+            updateGhosts();
+
+            ghostMoveClock = now;
+
+        }
+
+
+        checkGhostCollision();
+
+        if(state === "playing"){
+            checkLevelClear();
+        }
+
+
+        mouthPhase += dt/35;
+
+    }
+
+
+    else if(state === "dead"){
+
+        if(
+            now-deathStart >= 1200
+        ){
+
+            if(lives <= 0){
+
+                state = "gameover";
+
+                overlay.classList.remove(
+                    "hidden"
+                );
+
+                menuScore.innerHTML =
+                    `FINAL SCORE <strong>${String(score).padStart(6,"0")}</strong>`;
+
+                stopBGM();
+
+            }else{
+
+                resetPositions();
+
+                state = "ready";
+
+                readyStart = now;
+
+                if(soundEnabled){
+                    startBGM();
+                }
+
+            }
+
+        }
+
+    }
+
+
+    else if(state === "levelclear"){
+
+        if(
+            now-levelClearStart >= 1500
+        ){
+
+            nextLevel();
+
+        }
+
+    }
+
+
+    draw();
+
+    requestAnimationFrame(gameLoop);
+
+}
+
+
+/* ============================================================
+   INITIAL STATE
+   ============================================================ */
+
+resetPellets();
+
+resetPositions();
+
+state = "menu";
+
+menuScore.textContent =
+    "Press START to begin";
+
+draw();
+
+requestAnimationFrame(gameLoop);
+
+
+/* ============================================================
+   PAGE VISIBILITY
+   ============================================================ */
+
+document.addEventListener(
+    "visibilitychange",
+    ()=>{
+
+        if(
+            document.hidden &&
+            state === "playing"
+        ){
+
+            state = "paused";
+
+            bgm.pause();
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   WINDOW CLOSE
+   ============================================================ */
+
+window.addEventListener(
+    "beforeunload",
+    ()=>{
+        stopBGM();
+    }
+);
+
+</script>
+
+</body>
+</html>
